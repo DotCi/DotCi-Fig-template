@@ -29,6 +29,7 @@ import org.kohsuke.github.GHRepository;
 import org.kohsuke.github.GHContent;
 import java.io.IOException;
 import java.util.Iterator;
+import com.groupon.jenkins.buildtype.install_packages.template.InstallPackages;
 
 @Extension
 public class Fig extends InstallPackages {
