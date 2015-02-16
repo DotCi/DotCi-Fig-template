@@ -37,18 +37,13 @@ public class Fig extends InstallPackages {
     protected boolean isDefault(GHRepository githubRepository) {
         if ("shell".equalsIgnoreCase( githubRepository.getLanguage())) {
             try {
-                boolean containsDocker = false;
-                boolean containsFig = false;
                 for (Iterator<GHContent> files = githubRepository.getDirectoryContent(".").iterator(); files.hasNext();){
                     GHContent file = (GHContent)files.next();
-                    if ("Dockerfile".equals(file.getName())) {
-                        containsDocker = true;
-                    }
                     if ("fig.yml".equals(file.getName())) {
-                        containsFig = true;
+                        return true;
                     }
                 }
-                return (containsDocker && containsFig);
+                return false;
             } catch (IOException ex) {
                 return false;
             }
