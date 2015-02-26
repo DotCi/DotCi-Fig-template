@@ -32,6 +32,8 @@ environment:
 build:
   info:
     - docker --version
+  before:
+    - 'for file in `find . -type f -not -path "./.git/*"`; do touch -d "\$(git rev-list -n 1 HEAD \$file | xargs git show -s --format=%ai)" \$file; done'
   run:
     - awk '/^FROM /{system("docker pull "\$2)}' Dockerfile
     - docker build -t $DOCKER_IMAGE:$DOCKER_TAG .
