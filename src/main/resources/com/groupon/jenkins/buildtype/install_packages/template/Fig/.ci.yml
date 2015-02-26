@@ -28,8 +28,8 @@ environment:
   packages:
     - docker-1.4.1
   vars:
-    DOCKER_IMAGE: '<% out<< JOB_NAME.replaceAll('-','_').replaceAll('^','docker.registry/') %>'
-    DOCKER_TAG: '<% if (DOTCI_PULL_REQUEST || DOTCI_BRANCH == "master") { %>latest<% } else { %>$DOTCI_BRANCH<% } %>'
+    DOCKER_IMAGE: '<% out<< JOB_NAME.toLowerCase().replaceAll('-','_').replaceAll('^','docker.registry/') %>'
+    DOCKER_TAG: '<% if (DOTCI_PULL_REQUEST || DOTCI_BRANCH == "master") { %>latest<% } else { out<< DOTCI_BRANCH.replaceAll(/[^A-Za-z0-9]/,"").toLowerCase() } %>'
 
 build:
   info:
@@ -44,6 +44,7 @@ build:
     - fig -p $BUILD_TAG pull --allow-insecure-ssl # https://github.com/docker/fig/issues/158
     - fig -p $BUILD_TAG build
     - fig -p $BUILD_TAG up
+    - fig -p $BUILD_TAG ps
     - EXIT_CODE=`awk '/^test/{gsub(/:\$/,"");print}' fig.yml | xargs fig -p $BUILD_TAG ps 2>/dev/null | grep Exit | sed 's/.*Exit //g' | awk '{n=n+\$1}END{print n}'`
     - fig -p $BUILD_TAG kill
     - fig -p $BUILD_TAG rm --force
