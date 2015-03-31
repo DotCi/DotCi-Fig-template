@@ -31,6 +31,7 @@ environment:
     DOCKER_IMAGE: '<% out<< JOB_NAME.toLowerCase().replaceAll('-','_').replaceAll('^','docker.registry/') %>'
     DOCKER_TAG: '<% if (DOTCI_PULL_REQUEST || DOTCI_BRANCH == "master") { %>latest<% } else { out<< DOTCI_BRANCH.replaceAll(/[^A-Za-z0-9]/,"").toLowerCase() } %>'
     DOCKER_SHA: '\${DOTCI_SHA:0:8}' # use SHA instead of TAG to be uniq and avoid concurrent builds hijacking each others tag for subsequent commits
+    DOCKER_BUILD_SERVICE: 'ci'
 
 build:
   info:
@@ -42,13 +43,31 @@ build:
     - "[ ! -f Dockerfile ] || awk '/^FROM /{system(\"docker pull \"\$2)}' Dockerfile"
     - "[ ! -f Dockerfile ] || docker build -t $DOCKER_IMAGE:$DOCKER_SHA ."
 
-    - docker-compose -p $BUILD_TAG pull --allow-insecure-ssl # https://github.com/docker/fig/issues/158
+    # Insure latest image dependencies are downloaded to avoid out-of-date local cache
+    - docker-compose -p $BUILD_TAG pull
+
+    # Create the docker container for the current branch
     - docker-compose -p $BUILD_TAG build
+
+    # This command will block until the tests are done
     - docker-compose -p $BUILD_TAG up
+
+    # Console output the test result(s)
     - docker-compose -p $BUILD_TAG ps
-    - EXIT_CODE=`awk '/^test/{gsub(/:\$/,"");print}' docker-compose.yml | xargs docker-compose -p $BUILD_TAG ps 2>/dev/null | grep Exit | sed 's/.*Exit //g' | awk '{n=n+\$1}END{print n}'`
+
+    # Get the container id for the run of the previous command
+    - DOCKER_CONTAINER=`docker-compose -p $BUILD_TAG ps -q $DOCKER_BUILD_SERVICE | cut -c -12`
+
+    # This is how we get the success of the build. If we can't find a docker container that looks like
+    # the test run that has an exit code zero, this command will output a non-zero exit code.
+    # EXIT_CODE is used on the last line to signal a passing build to CI.
+    - docker ps -a --filter 'exited=0' | grep $DOCKER_CONTAINER; EXIT_CODE=\$?
+
+    # Cleanup
     - docker-compose -p $BUILD_TAG kill
     - docker-compose -p $BUILD_TAG rm --force
+
+    # Exit with the status code of the test suite
     - '[ $EXIT_CODE -eq 0 ] || exit $EXIT_CODE' # https://github.com/docker/fig/issues/683
 
     - "[ ! -f Dockerfile ] || docker tag -f $DOCKER_IMAGE:$DOCKER_SHA $DOCKER_IMAGE:$DOCKER_TAG"
