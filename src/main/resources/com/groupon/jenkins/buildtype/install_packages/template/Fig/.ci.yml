@@ -46,6 +46,9 @@ build:
     # Insure latest image dependencies are downloaded to avoid out-of-date local cache
     - docker-compose -p $BUILD_TAG pull
 
+    # Finally block ensure all running process in container, then cleaned up
+    - trap "docker-compose -p $BUILD_TAG kill; docker-compose -p $BUILD_TAG rm --force; exit" EXIT HUP INT QUIT PIPE TERM
+
     # Create the docker container for the current branch
     - docker-compose -p $BUILD_TAG build
 
@@ -62,10 +65,6 @@ build:
     # the test run that has an exit code zero, this command will output a non-zero exit code.
     # EXIT_CODE is used on the last line to signal a passing build to CI.
     - docker ps -a --filter 'exited=0' | grep $DOCKER_CONTAINER; EXIT_CODE=\$?
-
-    # Cleanup
-    - docker-compose -p $BUILD_TAG kill
-    - docker-compose -p $BUILD_TAG rm --force
 
     # Exit with the status code of the test suite
     - '[ $EXIT_CODE -eq 0 ] || exit $EXIT_CODE' # https://github.com/docker/fig/issues/683
