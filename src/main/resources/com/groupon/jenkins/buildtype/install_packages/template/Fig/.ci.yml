@@ -24,9 +24,9 @@
 parent_template: install_packages
 environment:
   language: fig
-  language_versions: 1.0.1
+  language_versions: 1.1.0
   packages:
-    - docker-1.4.1
+    - docker-1.5.0
   vars:
     DOCKER_IMAGE: '<% out<< JOB_NAME.toLowerCase().replaceAll('-','_').replaceAll('^','docker.registry/') %>'
     DOCKER_TAG: '<% if (DOTCI_PULL_REQUEST || DOTCI_BRANCH == "master") { %>latest<% } else { out<< DOTCI_BRANCH.replaceAll(/[^A-Za-z0-9]/,"").toLowerCase() } %>'
@@ -35,20 +35,20 @@ environment:
 build:
   info:
     - docker --version
-    - fig --version
+    - docker-compose --version
   before:
     - 'for file in `find . -type f -not -path "./.git/*"`; do touch -d "\$(git rev-list -n 1 HEAD \$file | xargs git show -s --format=%ai)" \$file; done'
   run:
     - "[ ! -f Dockerfile ] || awk '/^FROM /{system(\"docker pull \"\$2)}' Dockerfile"
     - "[ ! -f Dockerfile ] || docker build -t $DOCKER_IMAGE:$DOCKER_SHA ."
 
-    - fig -p $BUILD_TAG pull --allow-insecure-ssl # https://github.com/docker/fig/issues/158
-    - fig -p $BUILD_TAG build
-    - fig -p $BUILD_TAG up
-    - fig -p $BUILD_TAG ps
-    - EXIT_CODE=`awk '/^test/{gsub(/:\$/,"");print}' fig.yml | xargs fig -p $BUILD_TAG ps 2>/dev/null | grep Exit | sed 's/.*Exit //g' | awk '{n=n+\$1}END{print n}'`
-    - fig -p $BUILD_TAG kill
-    - fig -p $BUILD_TAG rm --force
+    - docker-compose -p $BUILD_TAG pull --allow-insecure-ssl # https://github.com/docker/fig/issues/158
+    - docker-compose -p $BUILD_TAG build
+    - docker-compose -p $BUILD_TAG up
+    - docker-compose -p $BUILD_TAG ps
+    - EXIT_CODE=`awk '/^test/{gsub(/:\$/,"");print}' docker-compose.yml | xargs docker-compose -p $BUILD_TAG ps 2>/dev/null | grep Exit | sed 's/.*Exit //g' | awk '{n=n+\$1}END{print n}'`
+    - docker-compose -p $BUILD_TAG kill
+    - docker-compose -p $BUILD_TAG rm --force
     - '[ $EXIT_CODE -eq 0 ] || exit $EXIT_CODE' # https://github.com/docker/fig/issues/683
 
     - "[ ! -f Dockerfile ] || docker tag -f $DOCKER_IMAGE:$DOCKER_SHA $DOCKER_IMAGE:$DOCKER_TAG"
