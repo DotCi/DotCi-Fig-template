@@ -36,7 +36,7 @@ environment:
 build:
   info:
     - docker --version
-    - docker-compose --version
+    - fig --version
   before:
     - 'for file in `find . -type f -not -path "./.git/*"`; do touch -d "\$(git rev-list -n 1 HEAD \$file | xargs git show -s --format=%ai)" \$file; done'
   run:
@@ -44,22 +44,22 @@ build:
     - "[ ! -f Dockerfile ] || docker build -t $DOCKER_IMAGE:$DOCKER_SHA ."
 
     # Insure latest image dependencies are downloaded to avoid out-of-date local cache
-    - docker-compose -p $BUILD_TAG pull
+    - fig -p $BUILD_TAG pull
 
     # Finally block ensure all running process in container, then cleaned up
-    - trap "docker-compose -p $BUILD_TAG kill; docker-compose -p $BUILD_TAG rm --force; exit" EXIT HUP INT QUIT PIPE TERM
+    - trap "fig -p $BUILD_TAG kill; fig -p $BUILD_TAG rm --force; exit" EXIT HUP INT QUIT PIPE TERM
 
     # Create the docker container for the current branch
-    - docker-compose -p $BUILD_TAG build
+    - fig -p $BUILD_TAG build
 
     # This command will block until the tests are done
-    - docker-compose -p $BUILD_TAG up
+    - fig -p $BUILD_TAG up
 
     # Console output the test result(s)
-    - docker-compose -p $BUILD_TAG ps
+    - fig -p $BUILD_TAG ps
 
     # Get the container id for the run of the previous command
-    - DOCKER_CONTAINER=`docker-compose -p $BUILD_TAG ps -q $DOCKER_BUILD_SERVICE | cut -c -12`
+    - DOCKER_CONTAINER=`fig -p $BUILD_TAG ps -q $DOCKER_BUILD_SERVICE | cut -c -12`
 
     # This is how we get the success of the build. If we can't find a docker container that looks like
     # the test run that has an exit code zero, this command will output a non-zero exit code.
