@@ -29,11 +29,11 @@ THE SOFTWARE.
         <artifactId>plugin</artifactId>
         <!-- Baseline Jenkins version you use to build and test the plugin. Users must have this version or newer to run. -->
         <version>1.596</version>
-        <relativePath/>
+        <relativePath />
     </parent>
     <groupId>com.groupon.jenkins-ci.plugins</groupId>
     <artifactId>DotCi-Fig-template</artifactId>
-    <version>1.0.3-SNAPSHOT</version>
+    <version>1.0.3</version>
     <packaging>hpi</packaging>
     <name>DotCi Fig template</name>
     <licenses>
@@ -55,7 +55,8 @@ THE SOFTWARE.
         <connection>scm:git:ssh://github.com/groupon/DotCi-Fig-template.git</connection>
         <developerConnection>scm:git:ssh://git@github.com/groupon/DotCi-Fig-template.git</developerConnection>
         <url>http://github.com/groupon/DotCi-Fig-template</url>
-    </scm>
+      <tag>DotCi-Fig-template-1.0.3</tag>
+  </scm>
     <repositories>
         <repository>
             <id>repo.jenkins-ci.org</id>
