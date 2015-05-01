@@ -38,17 +38,21 @@ public class Docker extends InstallPackages {
         if ("shell".equalsIgnoreCase( githubRepository.getLanguage())) {
             try {
 	        boolean containsDocker = false;
+                boolean containsDockerCompose = false;
                 boolean containsFig = false;
                 for (Iterator<GHContent> files = githubRepository.getDirectoryContent(".").iterator(); files.hasNext();){
                     GHContent file = (GHContent)files.next();
                     if ("Dockerfile".equals(file.getName())) {
                         containsDocker = true;
                     }
+                    if ("docker-compose.yml".equals(file.getName())) {
+                        containsDockerCompose = true;
+                    }
                     if ("fig.yml".equals(file.getName())) {
                         containsFig = true;
                     }
                 }
-                return (containsDocker && !containsFig);
+                return (containsDocker && !containsFig && !containsDockerCompose);
             } catch (IOException ex) {
                 return false;
             }

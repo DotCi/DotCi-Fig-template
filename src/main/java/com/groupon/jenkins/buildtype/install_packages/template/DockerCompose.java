@@ -32,23 +32,19 @@ import java.util.Iterator;
 import com.groupon.jenkins.buildtype.install_packages.template.InstallPackages;
 
 @Extension
-public class Fig extends InstallPackages {
+public class DockerCompose extends InstallPackages {
     @Override
     protected boolean isDefault(GHRepository githubRepository) {
         if ("shell".equalsIgnoreCase( githubRepository.getLanguage())) {
             try {
                 boolean containsDockerCompose = false;
-                boolean containsFig = false;
                 for (Iterator<GHContent> files = githubRepository.getDirectoryContent(".").iterator(); files.hasNext();){
                     GHContent file = (GHContent)files.next();
                     if ("docker-compose.yml".equals(file.getName())) {
                         containsDockerCompose = true;
                     }
-                    if ("fig.yml".equals(file.getName())) {
-                        containsFig = true;
-                    }
                 }
-                return (containsFig && !containsDockerCompose);
+                return containsDockerCompose;
             } catch (IOException ex) {
                 return false;
             }
