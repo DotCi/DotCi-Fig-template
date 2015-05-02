@@ -32,7 +32,7 @@ import java.util.Iterator;
 import com.groupon.jenkins.buildtype.install_packages.template.InstallPackages;
 
 @Extension
-public class DockerCompose extends InstallPackages {
+public class Dockercompose extends InstallPackages {
     @Override
     protected boolean isDefault(GHRepository githubRepository) {
         if ("shell".equalsIgnoreCase( githubRepository.getLanguage())) {
