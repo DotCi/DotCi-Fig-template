@@ -32,7 +32,7 @@ environment:
     DOCKER_IMAGE: '<% out<< JOB_NAME.toLowerCase().replaceAll('-','_') %>'
     DOCKER_TAG: '<% if (DOTCI_PULL_REQUEST || DOTCI_BRANCH == "master") { %>latest<% } else { out<< DOTCI_BRANCH.replaceAll(/[^A-Za-z0-9]/,"").toLowerCase() } %>'
     DOCKER_COMPOSE_TEST: 'ci'
-    DOCKER_COMPOSE_TEST_IMAGE: '<% out << BUILD_TAG.toLowerCase().replace('-','') %>_ci'
+    DOCKER_COMPOSE_TEST_IMAGE: "<% out << BUILD_TAG.toLowerCase().replace('-','') %>_${DOCKER_COMPOSE_TEST}"
 
 build:
   info:
