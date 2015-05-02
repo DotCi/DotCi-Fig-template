@@ -26,14 +26,13 @@ environment:
   language: dockercompose
   language_versions: 1.1.0
   packages:
-    - docker-1.5.0
+    - docker-1.6.0
   vars:
     DOCKER_REGISTRY: 'docker.registry'
     DOCKER_IMAGE: '<% out<< JOB_NAME.toLowerCase().replaceAll('-','_') %>'
     DOCKER_TAG: '<% if (DOTCI_PULL_REQUEST || DOTCI_BRANCH == "master") { %>latest<% } else { out<< DOTCI_BRANCH.replaceAll(/[^A-Za-z0-9]/,"").toLowerCase() } %>'
-    DOCKER_SHA: '\${DOTCI_SHA:0:8}' # use SHA instead of TAG to be uniq and avoid concurrent builds hijacking each others tag for subsequent commits
-    DOCKER_COMPOSE_MAIN: 'ci'
-    DOCKER_COMPOSE_IMAGE: '<% out << BUILD_TAG.toLowerCase().replace('-','') %>_ci'
+    DOCKER_COMPOSE_TEST: 'ci'
+    DOCKER_COMPOSE_TEST_IMAGE: '<% out << BUILD_TAG.toLowerCase().replace('-','') %>_ci'
 
 build:
   info:
@@ -42,8 +41,11 @@ build:
   before:
     - 'for file in `find . -type f -not -path "./.git/*"`; do touch -d "\$(git rev-list -n 1 HEAD \$file | xargs git show -s --format=%ai)" \$file; done'
   run:
+    # Insure latest image dependencies are downloaded to avoid out-of-date local cache
     - "[ ! -f Dockerfile ] || awk '/^FROM /{system(\"docker pull \"\$2)}' Dockerfile"
-    - "[ ! -f Dockerfile ] || docker build -t ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOCKER_SHA} ."
+
+    # use SHA to avoid concurrent subsequent builds from hijacking the same tag
+    - "[ ! -f Dockerfile ] || docker build -t ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOTCI_SHA} ."
 
     # Insure latest image dependencies are downloaded to avoid out-of-date local cache
     - docker-compose -p ${BUILD_TAG} pull
@@ -55,7 +57,7 @@ build:
     - docker-compose -p ${BUILD_TAG} build
 
     # re-tag docker-compose build to avoid repeated docker build
-    #- docker tag ${DOCKER_COMPOSE_IMAGE}:latest ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOTCI_SHA}
+    #- docker tag ${DOCKER_COMPOSE_TEST_IMAGE}:latest ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOTCI_SHA}
 
     # This command will block until the tests are done
     - docker-compose -p ${BUILD_TAG} up
@@ -64,7 +66,7 @@ build:
     - docker-compose -p ${BUILD_TAG} ps
 
     # Get the container id for the run of the previous command
-    - DOCKER_CONTAINER=`docker-compose -p ${BUILD_TAG} ps -q ${DOCKER_COMPOSE_MAIN} | cut -c -12`
+    - DOCKER_CONTAINER=`docker-compose -p ${BUILD_TAG} ps -q ${DOCKER_COMPOSE_TEST} | cut -c -12`
 
     # This is how we get the success of the build. If we can't find a docker container that looks like
     # the test run that has an exit code zero, this command will output a non-zero exit code.
@@ -74,5 +76,5 @@ build:
     # Exit with the status code of the test suite
     - '[ ${EXIT_CODE} -eq 0 ] || exit ${EXIT_CODE}' # https://github.com/docker/fig/issues/683
 
-    - "[ ! -f Dockerfile ] || docker tag -f ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOCKER_SHA} ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOCKER_TAG}"
+    - "[ ! -f Dockerfile ] || docker tag -f ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOTCI_SHA} ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOCKER_TAG}"
     - "[ ! -f Dockerfile ] || docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOCKER_TAG}"

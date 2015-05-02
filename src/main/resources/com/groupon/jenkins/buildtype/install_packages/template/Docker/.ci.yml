@@ -24,9 +24,10 @@
 parent_template: install_packages
 environment:
   language: docker
-  language_versions: 1.4.1
+  language_versions: 1.6.0
   vars:
-    DOCKER_IMAGE: '<% out<< JOB_NAME.toLowerCase().replaceAll('-','_').replaceAll('^','docker.registry/') %>'
+    DOCKER_REGISTRY: 'docker.registry'
+    DOCKER_IMAGE: '<% out<< JOB_NAME.toLowerCase().replaceAll('-','_') %>'
     DOCKER_TAG: '<% if (DOTCI_PULL_REQUEST || DOTCI_BRANCH == "master") { %>latest<% } else { out<< DOTCI_BRANCH.replaceAll(/[^A-Za-z0-9]/,"").toLowerCase() } %>'
 
 build:
@@ -35,6 +36,14 @@ build:
   before:
     - 'for file in `find . -type f -not -path "./.git/*"`; do touch -d "\$(git rev-list -n 1 HEAD \$file | xargs git show -s --format=%ai)" \$file; done'
   run:
+    # Insure latest image dependencies are downloaded to avoid out-of-date local cache
     - awk '/^FROM /{system("docker pull "\$2)}' Dockerfile
-    - docker build -t $DOCKER_IMAGE:$DOCKER_TAG .
-    - docker push $DOCKER_IMAGE:$DOCKER_TAG
+
+    # use SHA to avoid concurrent subsequent builds from hijacking the same tag
+    - docker build -t ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOTCI_SHA} .
+
+    # re-tag as :latest  or branch (in lower case)
+    - docker tag -f ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOTCI_SHA} ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOCKER_TAG}"
+
+    # docker publish image:tag
+    - docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE}:${DOCKER_TAG}"
